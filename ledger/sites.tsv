@@ -14,3 +14,7 @@ GATE-NAME-OVERCLAIMS	search key for UNWITNESSED-PASS, enumerated 14 of 18 sites	
 UNCHARACTERIZED-COST	census wall clock compared in STATE.md	closed
 UNCHARACTERIZED-COST	gate cost compared across two uncharacterized containers	open
 ATTRIBUTION-DRIFT	syntax-error probe caught by check 3, credited to check 2	open
+UNWITNESSED-PASS	bin/check.sh census skips n.isInternal, underscore-prefixed declarations never audited	open
+GATE-NAME-OVERCLAIMS	bin/verify.sh check 2, name says defenses verified, quantifies only over probes present	open
+UNWITNESSED-PASS	ledger/gates.tsv omits verify:9 and verify:10, nothing diffs declared gates against bin/verify.sh	open
+UNCHARACTERIZED-COST	STATE.md toolchain line compared but not stripped, README install path yields a red tree	open

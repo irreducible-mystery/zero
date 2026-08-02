@@ -4,7 +4,7 @@
      Every number below was computed by a command in this run.
      bin/verify.sh regenerates this file and fails if it differs. -->
 
-Generated: 2026-08-02 11:35:47 UTC
+Generated: 2026-08-02 12:12:08 UTC
 Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978f416e0ebd1fceeebc2c4138c05, Release)
 
 ## Corpus
@@ -76,16 +76,16 @@ below is derived from `ledger/` by that script.
 | | |
 |---|---|
 | Classes | 4 |
-| Recorded sites | 12 |
-| Open sites | 4 |
+| Recorded sites | 16 |
+| Open sites | 8 |
 | Gates | 10 |
 | Gates with no negative control | 2 |
 
 | class | sites | open | mechanism | search key |
 |---|---|---|---|---|
-| `UNWITNESSED-PASS` | 5 | 0 | mechanized | `grep -nE 'PASS\|exit 0\|exit $fail' bin/*.sh` |
-| `GATE-NAME-OVERCLAIMS` | 4 | 2 | mechanized | `for each gate, compare its printed title to the predicate it evaluates` |
-| `UNCHARACTERIZED-COST` | 2 | 1 | mechanized | `grep -nE 'date \+%s\|wall clock\|SECS' bin/*.sh` |
+| `UNWITNESSED-PASS` | 7 | 2 | mechanized | `grep -nE 'PASS\|exit 0\|exit $fail' bin/*.sh` |
+| `GATE-NAME-OVERCLAIMS` | 5 | 3 | mechanized | `for each gate, compare its printed title to the predicate it evaluates` |
+| `UNCHARACTERIZED-COST` | 3 | 2 | mechanized | `grep -nE 'date \+%s\|wall clock\|SECS' bin/*.sh` |
 | `ATTRIBUTION-DRIFT` | 1 | 1 | **unmechanized** | `-` |
 
 
