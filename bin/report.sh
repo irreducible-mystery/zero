@@ -30,7 +30,8 @@ command -v lean >/dev/null 2>&1 || { echo "no lean on PATH" >&2; exit 2; }
 
 # ---- measure ---------------------------------------------------------------
 LEAN_VER=$(lean --version 2>&1 | head -1)
-N_FILES=$(find lean -name '*.lean' | wc -l | tr -d ' ')
+# N_FILES is NOT computed here. It is derived from the per-file table below, so
+# that the count and the rows come from one enumeration and cannot disagree.
 N_PROBES=$(find probes -name '*.lean' | wc -l | tr -d ' ')
 
 T0=$(date +%s)
@@ -66,7 +67,24 @@ for p in probes/*.lean; do
 "
 done
 
-PER_FILE=$(printf '%s\n' "$CENSUS" | sed -n 's/^  \([A-Za-z]*\.lean\) *\([0-9]*\) declarations, *\([0-9]*\) audited.*/| `\1` | \2 | \3 |/p')
+# Per-file rows: enumerated by `find`, looked up by exact literal. The previous
+# version matched `[A-Za-z]*\.lean` against check.sh's human output, so a file
+# named with an underscore or a digit lost its row while still being counted --
+# hole #5's class, surviving one file away from where it was closed. See
+# bin/perfile.sh. A missing record now aborts the whole report rather than
+# quietly shortening the table.
+CENSUS_FILE=$(mktemp)
+printf '%s\n' "$CENSUS" > "$CENSUS_FILE"
+if ! PER_FILE=$(sh "$ROOT/bin/perfile.sh" lean "$CENSUS_FILE"); then
+    rm -f "$CENSUS_FILE"
+    echo "report.sh: ABORT -- refusing to emit a STATE.md whose table undercounts the corpus." >&2
+    exit 3
+fi
+rm -f "$CENSUS_FILE"
+
+# One enumeration, not two. N_FILES cannot disagree with the table because it is
+# the table.
+N_FILES=$(printf '%s\n' "$PER_FILE" | grep -c '^|')
 
 STAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
 # NOTE: no commit SHA here. A file cannot contain the SHA of the commit that

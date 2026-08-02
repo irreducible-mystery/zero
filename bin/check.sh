@@ -101,6 +101,12 @@ for f in *.lean; do
             | grep -vxE "$ALLOW")
 
     tot=$((tot+n)); aud=$((aud+n))
+    # Machine record, emitted from the loop variable. The human line below is for
+    # reading; this one is for consumption. report.sh used to re-derive the
+    # filename by regex over the human line, which meant the alphabet of legal
+    # filenames had to be guessed -- hole #5 all over again, one file away. The
+    # name is no longer guessed because it is no longer re-read.
+    printf 'PERFILE|%s|%s|%s\n' "$f" "$n" "$n"
     if [ -n "$extra" ]; then
         printf '  %-24s %3s declarations, %3s audited  FORBIDDEN AXIOMS:\n' "$f" "$n" "$n"
         printf '%s\n' "$extra" | sed 's/^/      /'
