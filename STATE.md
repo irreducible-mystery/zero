@@ -4,7 +4,7 @@
      Every number below was computed by a command in this run.
      bin/verify.sh regenerates this file and fails if it differs. -->
 
-Generated: 2026-08-02 02:36:33 UTC
+Generated: 2026-08-02 10:59:19 UTC
 Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978f416e0ebd1fceeebc2c4138c05, Release)
 
 ## Corpus
@@ -17,7 +17,7 @@ Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978
 | Files with forbidden axioms | 0 |
 | `sorry` warnings | 0 |
 | Census exit status | 0 |
-| Census wall clock | 22s |
+| Census wall clock | 13s |
 
 Permitted axioms are exactly `propext`, `Classical.choice`, `Quot.sound`.
 Anything else fails the run. This is an allowlist: an axiom nobody thought to
@@ -42,13 +42,17 @@ name cannot pass.
 These files exist to be rejected. **A passing probe means the gate is broken**,
 which is the failure this project keeps hitting. 4 of 4 caught.
 
-| probe | check.sh exit | verdict |
-|---|---|---|
-| `axiom_probe.lean` | 1 | CAUGHT |
-| `sorry_probe.lean` | 1 | CAUGHT |
-| `unicode_probe.lean` | 1 | CAUGHT |
-| `wrapped_axiom_probe.lean` | 1 | CAUGHT |
+Rejection is not enough. Each probe declares the failure signature it claims to
+produce, in a `.expect` sidecar, and the signature is checked. A probe that
+fails for some other reason is not testing what its name says, and used to pass
+this gate while regenerating this table byte-identically.
 
+| probe | check.sh exit | verdict | declared signature |
+|---|---|---|---|
+| `axiom_probe.lean` | 1 | CAUGHT | matched |
+| `sorry_probe.lean` | 1 | CAUGHT | matched |
+| `unicode_probe.lean` | 1 | CAUGHT | matched |
+| `wrapped_axiom_probe.lean` | 1 | CAUGHT | matched |
 
 ### What `lean` alone says about the same files
 

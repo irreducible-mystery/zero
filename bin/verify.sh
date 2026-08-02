@@ -4,12 +4,16 @@
 # Four things must hold. Any one failing exits non-zero.
 #
 #   1. the corpus passes the census      (positive control)
-#   2. EVERY probe is rejected           (negative control -- a passing probe
-#                                         means the alarm is broken, which is
-#                                         the failure mode that keeps recurring)
+#   2. EVERY probe fails FOR ITS DECLARED REASON  (negative control -- a passing
+#                                         probe means the alarm is broken, and a
+#                                         probe that fails for some other reason
+#                                         is a defense that has been removed
+#                                         while the gate reports it active)
 #   3. STATE.md regenerates identically  (no hand-typed numbers can survive)
 #   4. no stray .lean outside lean/ and probes/
 #   5. the per-file table cannot silently shorten (negative control, no toolchain)
+#   6. a probe cannot be swapped for one that fails differently (negative control
+#                                         for check 2 -- planted, not assumed)
 #
 # (5) exists because (3) is weaker than it reads. Check 3 asserts regeneration is
 # DETERMINISTIC, not that it is COMPLETE. A table built by a regex that could not
@@ -40,21 +44,14 @@ else
 fi
 
 echo
-echo "== 2. negative controls (every probe MUST be rejected) =="
-n=0
-for p in probes/*.lean; do
-    n=$((n+1)); b=$(basename "$p")
-    d=$(mktemp -d); cp "$p" "$d/"; cp bin/check.sh "$d/"
-    ( cd "$d" && sh check.sh >/dev/null 2>&1 ); prc=$?
-    rm -rf "$d"
-    if [ "$prc" -ne 0 ]; then
-        printf '   %-24s rejected (exit %s)  PASS\n' "$b" "$prc"
-    else
-        printf '   %-24s ACCEPTED (exit 0)   FAIL -- the gate is broken\n' "$b"
-        fail=1
-    fi
-done
-[ "$n" -eq 0 ] && { echo "   FAIL: no probes found. A gate with no negative control is not a gate."; fail=1; }
+echo "== 2. negative controls (every probe MUST fail, FOR ITS DECLARED REASON) =="
+# This check used to be named "every probe MUST be rejected" and assert only
+# "every file in probes/ exits non-zero". Those are not the same claim, and the
+# gap let a probe be swapped for one that fails differently -- silently removing
+# a defense while this gate reported it active. bin/probes.sh checks the declared
+# failure signature; the exit code is kept as a necessary condition, not as the
+# assertion. Human lines go to stderr, table rows to stdout.
+sh bin/probes.sh probes >/dev/null || fail=1
 
 echo
 echo "== 3. STATE.md is generated, not typed =="
@@ -126,6 +123,52 @@ else
     echo "   PASS: a census missing a record is rejected, not quietly dropped"
 fi
 rm -rf "$d"
+
+echo
+echo "== 6. a probe cannot be swapped for one that fails differently (negative control) =="
+# The control for check 2, planted rather than assumed. Each case below is an
+# attack that check 2 used to pass. The last case is the positive control: if
+# probes.sh rejected everything it would score full marks here while being
+# useless, which is the same defect one level up.
+pd=$(mktemp -d)
+p_expect() {   # <label> <expect-non-zero?> — run probes.sh on $pd and judge
+    sh bin/probes.sh "$pd" >/dev/null 2>&1; rc=$?
+    if [ "$2" = "reject" ] && [ "$rc" -eq 0 ]; then
+        echo "   FAIL: $1 -- ACCEPTED"; fail=1
+    elif [ "$2" = "accept" ] && [ "$rc" -ne 0 ]; then
+        echo "   FAIL: $1 -- rejected a legitimate probe (exit $rc)"; fail=1
+    else
+        echo "   PASS: $1"
+    fi
+}
+cat > "$pd/tiny_probe.lean" <<'PROBE_EOF'
+namespace Tiny
+axiom tiny_cheat : (0:Nat) = 1
+theorem tiny_bad : (0:Nat) = 1 := tiny_cheat
+end Tiny
+PROBE_EOF
+
+# (a) no declaration at all
+p_expect "a probe with no .expect is refused" reject
+
+# (b) declaration present but empty of assertions
+printf '# only a comment\n' > "$pd/tiny_probe.expect"
+p_expect "an .expect that is comments-only is refused" reject
+
+# (c) THE ATTACK: the probe fails, but not for the reason it declares. This is
+#     the plain-ASCII swap of unicode_probe.lean, in miniature.
+printf 'Uni.\316\264gap_normal\n' > "$pd/tiny_probe.expect"
+p_expect "a probe that fails for the WRONG reason is refused" reject
+
+# (d) declaration with no body
+printf 'Tiny.tiny_cheat\n' > "$pd/orphan_probe.expect"
+printf 'Tiny.tiny_cheat\n' > "$pd/tiny_probe.expect"
+p_expect "an .expect whose .lean is gone is refused" reject
+rm -f "$pd/orphan_probe.expect"
+
+# (e) positive control -- an honest probe must still pass, or (a)-(d) prove nothing
+p_expect "an honest probe, declaring its real signature, is accepted" accept
+rm -rf "$pd"
 
 echo
 if [ "$fail" -eq 0 ]; then echo "ALL GATES PASS"; else echo "GATES FAILED"; fi

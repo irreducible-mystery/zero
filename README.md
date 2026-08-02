@@ -32,13 +32,17 @@ in front of you. If it exits non-zero, something is wrong and it will say what.
 ## What the gate checks
 
 1. **Positive control** — the corpus passes its own axiom census.
-2. **Negative control** — every file in `probes/` is *rejected*. A probe that
-   passes means the alarm is broken.
+2. **Negative control** — every file in `probes/` is *rejected, for the reason
+   it declares*. A probe that passes means the alarm is broken; a probe that
+   fails for some other reason is a defense that has been removed while the
+   gate reports it active.
 3. **Generated, not typed** — `STATE.md` regenerates byte-identically.
 4. No stray `.lean` outside `lean/` and `probes/`.
 5. **The per-file table cannot silently shorten** — planted filenames an
    author's regex would not think to spell must still appear, and a census
    missing a record must abort rather than drop a row.
+6. **A probe cannot be swapped for one that fails differently** — the negative
+   control for check 2, planted rather than assumed.
 
 Check 2 is the one that matters. A checker only ever run on files that pass has
 no evidence behind it. Three separate holes in this checker were found by
@@ -54,6 +58,22 @@ exits 0 on it, with no warning** — a planted axiom is not an error. That file 
 the reason exit status is not a gate, and it is kept so the claim stays testable
 instead of remembered.
 
+A fourth hole was found in check 2 itself. Its name said "every probe is
+rejected"; what it asserted was "every file in `probes/` exits non-zero". Those
+are not the same claim. Replace `unicode_probe.lean` — the control for the
+Greek-identifier hole, the one that let `False` through — with a plain-ASCII
+planted axiom, and it still compiles, still exits non-zero, still prints
+`rejected PASS`. No Greek identifier is tested anywhere in the tree any more,
+`STATE.md` regenerates **byte-identically**, and the gate says ALL GATES PASS.
+
+So each probe now declares its expected failure signature in a `.expect`
+sidecar, and the signature is checked. The exit code is one bit, and every
+wrong answer has one. A signature names the thing the probe exists to pin.
+
+An `.expect` that is missing, empty, orphaned from its `.lean`, or generic
+enough to be satisfied by a *different* probe's output all abort — the last one
+because otherwise this gate would acquire the disease it was built to cure.
+
 ## What the gates do not cover
 
 Some invariants here are enforced by a gate. Others are enforced only by an
@@ -64,10 +84,11 @@ somewhere and pretending otherwise is how the regress gets papered over.
 - **Gate-enforced** — the corpus census, every probe being rejected, `STATE.md`
   being a regeneration rather than a typing, per-file table completeness.
 - **Anchor-enforced (git, not the gate)** — the *number of probes*. `N_PROBES`
-  and the caught count come from the same glob, so deleting a probe regenerates
-  as "3 of 3 caught," which reads as a pass. Only the committed `STATE.md`
-  diff catches it. That anchor is version control, outside the system, which is
-  this project's own thesis appearing inside its machinery.
+  and the caught count are one enumeration, so deleting a probe **and** its
+  `.expect` regenerates as "3 of 3 caught," which reads as a pass. Deleting
+  either one alone now aborts, so the gate covers half of this; the other half
+  is the committed `STATE.md` diff. That anchor is version control, outside the
+  system, which is this project's own thesis appearing inside its machinery.
 
 Check 3 is also weaker than it reads: it asserts regeneration is
 *deterministic*, not that it is *complete*. A table built by a regex that could
@@ -79,11 +100,14 @@ wrong every time. Check 5 exists because of that.
     bin/check.sh    axiom census: injected over every declaration, aborts if it
                     cannot extract, allowlist not denylist, plus an independent
                     gate on lean's own `uses 'sorry'` warning
+    bin/probes.sh   runs every negative control and checks WHY it failed against
+                    the signature the probe declares, not just that it failed
     bin/perfile.sh  builds the per-file table by enumerating files and looking
                     each one up as an exact literal — no pattern anywhere has to
                     guess what a future author may name a file
     bin/report.sh   generates STATE.md from live runs
     bin/verify.sh   the gates above
     lean/           the corpus, zero imports
-    probes/         files that must fail
+    probes/         files that must fail, each with a `.expect` sidecar naming
+                    the failure signature it claims to produce
     STATE.md        generated — do not edit
