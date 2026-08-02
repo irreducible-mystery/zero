@@ -1,0 +1,16 @@
+# gate_id	outcome
+#
+# APPEND-ONLY. What a gate actually caught, in the field. Written when a gate
+# fires against real work -- not against its own negative control.
+#
+# outcome is one of:
+#   field-catch      caught something a person was actually trying to do
+#   control-only     fired only against its own planted probe
+#
+# WHY: deletion pressure needs data and nothing was recording it. A gate whose
+# lifetime record is control-only has zero field yield. Paired with friction,
+# that is the deletion signal -- the mirror of the escalation threshold, and
+# the only flow in this design that makes |G| go DOWN.
+check:a	field-catch
+verify:5	field-catch
+verify:4	control-only

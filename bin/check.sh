@@ -27,8 +27,18 @@
 #   So the list is no longer parsed. It is ASKED FOR. The census probe imports
 #   Lean, appends the file, and walks `env.constants.map₂` -- the declarations
 #   this module actually added -- calling `CollectAxioms.collect` on each. The
-#   answer comes from the same elaborator that accepted the file. There is no
-#   identifier it can spell that this cannot see.
+#   answer comes from the same elaborator that accepted the file.
+#
+#     6. that claim used to read "there is no identifier it can spell that this
+#        cannot see", and it was false. The walk carried `unless n.isInternal do`,
+#        and Name.isInternal is true of any name whose last component begins with
+#        `_`. A planted `axiom _cheat` and a `theorem _false : False` censused as
+#        "1 declarations, 1 audited, axioms within allowlist" and the gate exited
+#        0 with a proof of False in the corpus. Asking the elaborator for the list
+#        does not help if you then filter the answer.
+#
+#   Six holes, and the sixth is the fifth wearing a different alphabet. So the
+#   census no longer claims completeness -- it MEASURES it. See the SCOPE gate.
 #
 # TWO INDEPENDENT GATES, because one gate is one point of failure:
 #   (a) the axiom census below, ALLOWLIST not denylist
@@ -73,10 +83,17 @@ for f in *.lean; do
         echo 'open Lean Elab Command in'
         echo 'run_cmd do'
         echo '  let env ← getEnv'
+        echo '  let mut seen := 0'
+        echo '  let mut audited := 0'
         echo '  for (n, _) in env.constants.map₂.toList do'
-        echo '    unless n.isInternal do'
-        echo '      let (_, s) := ((CollectAxioms.collect n).run env).run {}'
-        echo '      logInfo s!"CENSUS|{n}|{s.axioms.toList.map toString}"'
+        echo '    seen := seen + 1'
+        echo '    audited := audited + 1'
+        echo '    let (_, s) := ((CollectAxioms.collect n).run env).run {}'
+        echo '    logInfo s!"CENSUS|{n}|{s.axioms.toList.map toString}"'
+        # The COMPLEMENT, reported by the same elaborator that produced the list.
+        # A filter is invisible in its own output; a count of what it excluded is
+        # not. See the SCOPE gate below.
+        echo '  logInfo s!"SCOPE|{seen}|{audited}"'
     } > "$probe"
     out=$(lean "$probe" 2>&1); prc=$?
     rm -f "$probe"
@@ -94,6 +111,38 @@ for f in *.lean; do
         fail=1; continue
     fi
 
+    # THE SCOPE GATE. Three counts that must agree: what Lean saw, what Lean
+    # audited, and what actually arrived here as CENSUS lines. Any filter placed
+    # between them shows up as a disagreement.
+    #
+    # This exists because the previous census carried `unless n.isInternal do`.
+    # Name.isInternal is true for any name whose last component starts with `_`,
+    # so a file containing
+    #     axiom _cheat : (0:Nat) = 1
+    #     theorem _false : False := by have h := _cheat; simp at h
+    # censused as "1 declarations, 1 audited, axioms within allowlist" and the
+    # whole gate exited 0 with a proof of False sitting in the corpus.
+    #
+    # That is hole #5's exact shape. The old restriction was the ASCII alphabet;
+    # the new one was isInternal. Removing a filter does not close the class,
+    # because the next filter is invisible for the same reason this one was. What
+    # closes it is that the EXCLUDED SET IS COUNTED. A future filter cannot hide
+    # in a census that reports its own complement.
+    scope=$(printf '%s\n' "$out" | grep '^SCOPE|' | head -1)
+    if [ -z "$scope" ]; then
+        echo "  ABORT: $f census reported no scope line - the audit cannot vouch for its own coverage"
+        fail=1; continue
+    fi
+    # NOTE: not `aud` -- that name is the running total below, and shadowing it
+    # here silently reported "203 declarations, 24 audited" on a clean corpus.
+    scope_seen=$(printf '%s' "$scope" | cut -d'|' -f2)
+    scope_aud=$(printf '%s' "$scope" | cut -d'|' -f3)
+    if [ "$scope_seen" != "$scope_aud" ] || [ "$scope_aud" != "$n" ]; then
+        echo "  ABORT: $f scope mismatch - lean saw $scope_seen, audited $scope_aud, $n reached the census."
+        echo "         Something is filtering declarations out of the audit."
+        fail=1; continue
+    fi
+
     extra=$(printf '%s\n' "$lines" \
             | sed 's/^CENSUS|[^|]*|//; s/^\[//; s/\]$//' \
             | tr ',' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
@@ -101,6 +150,12 @@ for f in *.lean; do
             | grep -vxE "$ALLOW")
 
     tot=$((tot+n)); aud=$((aud+n))
+    # Machine record, emitted from the loop variable. The human line below is for
+    # reading; this one is for consumption. report.sh used to re-derive the
+    # filename by regex over the human line, which meant the alphabet of legal
+    # filenames had to be guessed -- hole #5 all over again, one file away. The
+    # name is no longer guessed because it is no longer re-read.
+    printf 'PERFILE|%s|%s|%s\n' "$f" "$n" "$n"
     if [ -n "$extra" ]; then
         printf '  %-24s %3s declarations, %3s audited  FORBIDDEN AXIOMS:\n' "$f" "$n" "$n"
         printf '%s\n' "$extra" | sed 's/^/      /'

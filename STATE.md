@@ -4,7 +4,7 @@
      Every number below was computed by a command in this run.
      bin/verify.sh regenerates this file and fails if it differs. -->
 
-Generated: 2026-08-02 02:36:33 UTC
+Generated: 2026-08-02 13:09:20 UTC
 Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978f416e0ebd1fceeebc2c4138c05, Release)
 
 ## Corpus
@@ -12,12 +12,12 @@ Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978
 | | |
 |---|---|
 | Lean files in `lean/` | 9 |
-| Declarations | 140 |
-| Declarations audited | 140 |
+| Declarations | 203 |
+| Declarations audited | 203 |
 | Files with forbidden axioms | 0 |
 | `sorry` warnings | 0 |
 | Census exit status | 0 |
-| Census wall clock | 22s |
+| Census wall clock | 13s |
 
 Permitted axioms are exactly `propext`, `Classical.choice`, `Quot.sound`.
 Anything else fails the run. This is an allowlist: an axiom nobody thought to
@@ -27,28 +27,32 @@ name cannot pass.
 
 | file | declarations | audited |
 |---|---|---|
-| `ArtinSchreier.lean` | 34 | 34 |
-| `Ceiling.lean` | 15 | 15 |
+| `ArtinSchreier.lean` | 40 | 40 |
+| `Ceiling.lean` | 24 | 24 |
 | `Characteristic.lean` | 17 | 17 |
-| `Quadratic.lean` | 31 | 31 |
-| `Reflexive.lean` | 10 | 10 |
-| `Schedules.lean` | 15 | 15 |
-| `Shape.lean` | 9 | 9 |
-| `Tropical.lean` | 5 | 5 |
-| `Vieta.lean` | 4 | 4 |
+| `Quadratic.lean` | 45 | 45 |
+| `Reflexive.lean` | 21 | 21 |
+| `Schedules.lean` | 20 | 20 |
+| `Shape.lean` | 16 | 16 |
+| `Tropical.lean` | 8 | 8 |
+| `Vieta.lean` | 12 | 12 |
 
 ## Negative controls
 
 These files exist to be rejected. **A passing probe means the gate is broken**,
 which is the failure this project keeps hitting. 4 of 4 caught.
 
-| probe | check.sh exit | verdict |
-|---|---|---|
-| `axiom_probe.lean` | 1 | CAUGHT |
-| `sorry_probe.lean` | 1 | CAUGHT |
-| `unicode_probe.lean` | 1 | CAUGHT |
-| `wrapped_axiom_probe.lean` | 1 | CAUGHT |
+Rejection is not enough. Each probe declares the failure signature it claims to
+produce, in a `.expect` sidecar, and the signature is checked. A probe that
+fails for some other reason is not testing what its name says, and used to pass
+this gate while regenerating this table byte-identically.
 
+| probe | check.sh exit | verdict | declared signature |
+|---|---|---|---|
+| `axiom_probe.lean` | 1 | CAUGHT | matched |
+| `sorry_probe.lean` | 1 | CAUGHT | matched |
+| `unicode_probe.lean` | 1 | CAUGHT | matched |
+| `wrapped_axiom_probe.lean` | 1 | CAUGHT | matched |
 
 ### What `lean` alone says about the same files
 
@@ -62,6 +66,36 @@ error at all.
 | `unicode_probe.lean` | 0 | 0 |
 | `wrapped_axiom_probe.lean` | 0 | 0 |
 
+
+## Ledger
+
+Recurrence is a number here, not a narrative. A class with two or more **open**
+sites and no mechanism turns this build red; see `bin/ledger.sh`. Every count
+below is derived from `ledger/` by that script.
+
+| | |
+|---|---|
+| Classes | 4 |
+| Recorded sites | 13 |
+| Open sites | 5 |
+| Gates | 11 |
+| Gates with no negative control | 3 |
+
+| class | sites | open | mechanism | search key |
+|---|---|---|---|---|
+| `UNWITNESSED-PASS` | 6 | 1 | mechanized | `grep -nE 'PASS\|exit 0\|exit $fail' bin/*.sh` |
+| `GATE-NAME-OVERCLAIMS` | 4 | 2 | mechanized | `for each gate, compare its printed title to the predicate it evaluates` |
+| `UNCHARACTERIZED-COST` | 2 | 1 | mechanized | `grep -nE 'date \+%s\|wall clock\|SECS' bin/*.sh` |
+| `ATTRIBUTION-DRIFT` | 1 | 1 | **unmechanized** | `-` |
+
+
+The last column is what makes "a class is closed by a sweep, not a fix" a
+procedure rather than an intention. A class with no way to enumerate its other
+sites cannot be swept, so it stays local however real it is.
+
+Gates with no negative control are counted rather than tolerated silently. A
+gate whose only catch is its own control is either perfect or dead, and one with
+no control at all cannot be told apart from either.
 
 ## How to check this yourself
 

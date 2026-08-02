@@ -1,0 +1,4 @@
+# BOTH axioms must be named. Seeing only one means the wrapped line was
+# truncated, which is the exact defect this probe pins.
+Zz.CheatOneWithAnExtremelyLongIdentifierNameToForceTheOutputToWrapAcrossLines
+Zz.CheatTwoWithAnExtremelyLongIdentifierNameToForceTheOutputToWrapAcrossLines

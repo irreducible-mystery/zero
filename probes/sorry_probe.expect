@@ -1,0 +1,3 @@
+# Gate (b) must fire on lean's own warning, AND the census must see sorryAx.
+ABORT: sorry_probe.lean contains a declaration using 'sorry'
+sorryAx
