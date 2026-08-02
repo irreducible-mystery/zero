@@ -14,3 +14,4 @@
 check:a	field-catch
 verify:5	field-catch
 verify:4	control-only
+verify:3	field-catch
