@@ -14,3 +14,4 @@ GATE-NAME-OVERCLAIMS	search key for UNWITNESSED-PASS, enumerated 14 of 18 sites	
 UNCHARACTERIZED-COST	census wall clock compared in STATE.md	closed
 UNCHARACTERIZED-COST	gate cost compared across two uncharacterized containers	open
 ATTRIBUTION-DRIFT	syntax-error probe caught by check 3, credited to check 2	open
+UNWITNESSED-PASS	bin/check.sh census filter unless n.isInternal, hole 6	open

@@ -13,3 +13,4 @@ check:a	UNWITNESSED-PASS	probes/axiom_probe.lean
 check:b	GATE-NAME-OVERCLAIMS	probes/sorry_probe.lean
 verify:7	UNWITNESSED-PASS	verify.sh check 8
 verify:8	GATE-NAME-OVERCLAIMS	verify.sh check 8, case (g)
+check:scope	UNWITNESSED-PASS	uncontrolled
