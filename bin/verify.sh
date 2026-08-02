@@ -240,5 +240,40 @@ l_case "1 open site with no mechanism stays local (threshold, not a ban)" accept
 rm -rf "$ld"
 
 echo
+echo "== 9. the feedback channel is well-formed, and no gate is ripe for deletion =="
+# The DOWNWARD arrow. Checks 7-8 push mechanisms UP from defects; this pushes
+# deletions DOWN from lived experience. Without it escalation is a ratchet and
+# |G| only rises -- which GOVERNANCE.md warns about and this branch already did,
+# taking |G| from 4 to 8 in the session that wrote the warning.
+if sh bin/feedback.sh ledger; then
+    echo "   PASS"
+else
+    echo "   FAIL: a gate with >=2 friction reports and no field catch is a"
+    echo "         deletion candidate by design. Delete it or record a catch."
+    fail=1
+fi
+
+echo
+echo "== 10. the deletion threshold fires, and only when it should (negative control) =="
+# A threshold that never fires is decoration; one that always fires is a ban.
+# Both are the same defect as a gate whose name overclaims, one level up.
+fd=$(mktemp -d); cp ledger/*.tsv "$fd/"
+quiet=$(grep -v '^#' ledger/events.tsv | grep -v '^[[:space:]]*$' | awk -F'\t' '$2=="control-only"{print $1; exit}')
+if [ -z "$quiet" ]; then
+    echo "   FAIL: no control-only gate to test the threshold against"; fail=1
+else
+    printf '%s\tprobe\tcost\n%s\tprobe\tblocked\n' "$quiet" "$quiet" >> "$fd/friction.tsv"
+    sh bin/feedback.sh "$fd" >/dev/null 2>&1
+    if [ $? -ne 0 ]; then echo "   PASS: 2 friction + 0 field-catches is refused ($quiet)"
+    else echo "   FAIL: threshold did not fire at 2 friction reports"; fail=1; fi
+    cp ledger/*.tsv "$fd/"
+    printf '%s\tprobe\tcost\n' "$quiet" >> "$fd/friction.tsv"
+    sh bin/feedback.sh "$fd" >/dev/null 2>&1
+    if [ $? -eq 0 ]; then echo "   PASS: 1 friction report alone does not condemn a gate"
+    else echo "   FAIL: threshold fired at 1 -- that is a ban, not a threshold"; fail=1; fi
+fi
+rm -rf "$fd"
+
+echo
 if [ "$fail" -eq 0 ]; then echo "ALL GATES PASS"; else echo "GATES FAILED"; fi
 exit $fail
