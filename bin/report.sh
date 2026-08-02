@@ -69,7 +69,9 @@ done
 PER_FILE=$(printf '%s\n' "$CENSUS" | sed -n 's/^  \([A-Za-z]*\.lean\) *\([0-9]*\) declarations, *\([0-9]*\) audited.*/| `\1` | \2 | \3 |/p')
 
 STAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
-GITSHA=$(git rev-parse --short HEAD 2>/dev/null || echo 'not-a-repo')
+# NOTE: no commit SHA here. A file cannot contain the SHA of the commit that
+# adds it, so embedding one guarantees verify.sh fails on the next clone -- as
+# it did on this bundle's first independent run. Git records provenance already.
 
 # ---- emit ------------------------------------------------------------------
 cat <<EOF
@@ -80,7 +82,6 @@ cat <<EOF
      bin/verify.sh regenerates this file and fails if it differs. -->
 
 Generated: $STAMP
-Commit: $GITSHA
 Toolchain: $LEAN_VER
 
 ## Corpus

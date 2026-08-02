@@ -4,8 +4,7 @@
      Every number below was computed by a command in this run.
      bin/verify.sh regenerates this file and fails if it differs. -->
 
-Generated: 2026-08-02 01:50:55 UTC
-Commit: not-a-repo
+Generated: 2026-08-02 01:55:09 UTC
 Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978f416e0ebd1fceeebc2c4138c05, Release)
 
 ## Corpus
@@ -18,7 +17,7 @@ Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978
 | Files with forbidden axioms | 0 |
 | `sorry` warnings | 0 |
 | Census exit status | 0 |
-| Census wall clock | 19s |
+| Census wall clock | 12s |
 
 Permitted axioms are exactly `propext`, `Classical.choice`, `Quot.sound`.
 Anything else fails the run. This is an allowlist: an axiom nobody thought to
