@@ -4,7 +4,7 @@
      Every number below was computed by a command in this run.
      bin/verify.sh regenerates this file and fails if it differs. -->
 
-Generated: 2026-08-02 10:59:19 UTC
+Generated: 2026-08-02 11:35:47 UTC
 Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978f416e0ebd1fceeebc2c4138c05, Release)
 
 ## Corpus
@@ -17,7 +17,7 @@ Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978
 | Files with forbidden axioms | 0 |
 | `sorry` warnings | 0 |
 | Census exit status | 0 |
-| Census wall clock | 13s |
+| Census wall clock | 19s |
 
 Permitted axioms are exactly `propext`, `Classical.choice`, `Quot.sound`.
 Anything else fails the run. This is an allowlist: an axiom nobody thought to
@@ -66,6 +66,36 @@ error at all.
 | `unicode_probe.lean` | 0 | 0 |
 | `wrapped_axiom_probe.lean` | 0 | 0 |
 
+
+## Ledger
+
+Recurrence is a number here, not a narrative. A class with two or more **open**
+sites and no mechanism turns this build red; see `bin/ledger.sh`. Every count
+below is derived from `ledger/` by that script.
+
+| | |
+|---|---|
+| Classes | 4 |
+| Recorded sites | 12 |
+| Open sites | 4 |
+| Gates | 10 |
+| Gates with no negative control | 2 |
+
+| class | sites | open | mechanism | search key |
+|---|---|---|---|---|
+| `UNWITNESSED-PASS` | 5 | 0 | mechanized | `grep -nE 'PASS\|exit 0\|exit $fail' bin/*.sh` |
+| `GATE-NAME-OVERCLAIMS` | 4 | 2 | mechanized | `for each gate, compare its printed title to the predicate it evaluates` |
+| `UNCHARACTERIZED-COST` | 2 | 1 | mechanized | `grep -nE 'date \+%s\|wall clock\|SECS' bin/*.sh` |
+| `ATTRIBUTION-DRIFT` | 1 | 1 | **unmechanized** | `-` |
+
+
+The last column is what makes "a class is closed by a sweep, not a fix" a
+procedure rather than an intention. A class with no way to enumerate its other
+sites cannot be swept, so it stays local however real it is.
+
+Gates with no negative control are counted rather than tolerated silently. A
+gate whose only catch is its own control is either perfect or dead, and one with
+no control at all cannot be told apart from either.
 
 ## How to check this yourself
 

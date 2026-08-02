@@ -55,6 +55,15 @@ if ! PROBE_ROWS=$(sh "$ROOT/bin/probes.sh" probes 2>/dev/null); then
 fi
 # One enumeration. The count IS the table.
 N_PROBES=$(printf '%s\n' "$PROBE_ROWS" | grep -c '^| `')
+
+# The ledger's counts are generated for the same reason every other number here
+# is: a recurrence count that can be typed is a recurrence count that will drift,
+# and this one is what escalation triggers on.
+if ! LEDGER=$(sh "$ROOT/bin/ledger.sh" ledger 2>/dev/null); then
+    echo "report.sh: ABORT -- the ledger is invalid or something is ripe for escalation." >&2
+    echo "           Run: sh bin/ledger.sh ledger >/dev/null" >&2
+    exit 5
+fi
 N_PROBE_CAUGHT=$(printf '%s\n' "$PROBE_ROWS" | grep -c '| CAUGHT | matched |')
 
 # lean's own opinion of each probe, to show exit code is not a gate
@@ -146,6 +155,8 @@ error at all.
 | probe | lean exit | sorry warnings |
 |---|---|---|
 $LEAN_ON_PROBES
+
+$LEDGER
 
 ## How to check this yourself
 

@@ -171,5 +171,74 @@ p_expect "an honest probe, declaring its real signature, is accepted" accept
 rm -rf "$pd"
 
 echo
+echo "== 7. the ledger is well-formed, and nothing is ripe for escalation =="
+if sh bin/ledger.sh ledger >/dev/null; then
+    echo "   PASS"
+else
+    echo "   FAIL: see above. A class with >=2 open sites and no mechanism is red by design."
+    fail=1
+fi
+
+echo
+echo "== 8. the ledger gate cannot be satisfied vacuously (negative control) =="
+# The control for check 7. A ledger validator that accepted anything would make
+# the ledger FAILURES.md again -- prose that cannot be thresholded, which is the
+# thing it exists to replace. Needs no toolchain.
+ld=$(mktemp -d); TAB=$(printf '\t')
+l_case() {  # <label> <accept|reject>
+    sh bin/ledger.sh "$ld" >/dev/null 2>&1; rc=$?
+    if [ "$2" = "reject" ] && [ "$rc" -eq 0 ]; then echo "   FAIL: $1 -- ACCEPTED"; fail=1
+    elif [ "$2" = "accept" ] && [ "$rc" -ne 0 ]; then echo "   FAIL: $1 -- rejected a valid ledger (exit $rc)"; fail=1
+    else echo "   PASS: $1"; fi
+}
+mkclasses() { printf "%s\n" "$1" > "$ld/classes.tsv"; }
+mksites()   { printf "%s\n" "$1" > "$ld/sites.tsv"; }
+mkgates()   { printf "%s\n" "$1" > "$ld/gates.tsv"; }
+VALID_C="AAA${TAB}a machine${TAB}grep aaa"
+VALID_S="AAA${TAB}some/file.sh${TAB}open"
+VALID_G="g:1${TAB}AAA${TAB}a control"
+
+mkclasses "$VALID_C"; mksites "$VALID_S"; mkgates "$VALID_G"
+l_case "a valid ledger is accepted (positive control)" accept
+
+mkclasses "# only comments"
+l_case "an empty classes.tsv is refused" reject
+mkclasses "$VALID_C"
+
+mksites "BBB${TAB}some/file.sh${TAB}open"
+l_case "a site naming an unknown class is refused" reject
+
+mksites "$(printf 'AAA%ssame%sopen\nAAA%ssame%sclosed' "$TAB" "$TAB" "$TAB" "$TAB")"
+l_case "a duplicated (class, site) row is refused" reject
+
+mksites "AAA${TAB}some/file.sh${TAB}maybe"
+l_case "a site state that is neither open nor closed is refused" reject
+mksites "$VALID_S"
+
+mkclasses "AAA${TAB}a machine${TAB}-"
+l_case "a mechanism with no search key is refused" reject
+
+mkclasses "AAA${TAB}a machine${TAB}grep aaa${TAB}extra"
+l_case "a row with the wrong number of fields is refused" reject
+mkclasses "$VALID_C"
+
+mkgates "g:1${TAB}AAA${TAB}-"
+l_case "a gate declaring no control is refused" reject
+
+mkgates "g:1${TAB}ZZZ${TAB}a control"
+l_case "a gate closing an unknown class is refused" reject
+mkgates "$VALID_G"
+
+# THE ESCALATION ITSELF. If this one does not fire, the threshold is decoration.
+mkclasses "AAA${TAB}-${TAB}-"
+mksites "$(printf 'AAA%ssite/one%sopen\nAAA%ssite/two%sopen' "$TAB" "$TAB" "$TAB" "$TAB")"
+l_case "2 open sites with no mechanism turns the build red" reject
+
+# ...and does NOT fire at one open site, or the threshold is just a ban.
+mksites "$(printf 'AAA%ssite/one%sopen\nAAA%ssite/two%sclosed' "$TAB" "$TAB" "$TAB" "$TAB")"
+l_case "1 open site with no mechanism stays local (threshold, not a ban)" accept
+rm -rf "$ld"
+
+echo
 if [ "$fail" -eq 0 ]; then echo "ALL GATES PASS"; else echo "GATES FAILED"; fi
 exit $fail

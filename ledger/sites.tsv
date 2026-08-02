@@ -1,0 +1,16 @@
+# class_id	site	state
+#
+# APPEND-ONLY. No dates: git records ordering already, and a date is a number
+# that can be typed wrong with nothing checking it. state is open or closed.
+UNWITNESSED-PASS	bin/check.sh awk declaration extractor, holes 1-5	closed
+UNWITNESSED-PASS	bin/check.sh census yielding no declarations	closed
+UNWITNESSED-PASS	bin/report.sh per-file table regex, hole 6	closed
+UNWITNESSED-PASS	bin/verify.sh check 2 probe loop, exit code as the assertion	closed
+UNWITNESSED-PASS	bin/verify.sh check 2 empty probe set	closed
+GATE-NAME-OVERCLAIMS	bin/verify.sh check 3, name says complete, asserts deterministic	open
+GATE-NAME-OVERCLAIMS	bin/verify.sh check 2, name says rejected, asserted exit nonzero	closed
+GATE-NAME-OVERCLAIMS	bin/check.sh gate (b), name says catches sorry, asserts lean printed a string	open
+GATE-NAME-OVERCLAIMS	search key for UNWITNESSED-PASS, enumerated 14 of 18 sites	closed
+UNCHARACTERIZED-COST	census wall clock compared in STATE.md	closed
+UNCHARACTERIZED-COST	gate cost compared across two uncharacterized containers	open
+ATTRIBUTION-DRIFT	syntax-error probe caught by check 3, credited to check 2	open
