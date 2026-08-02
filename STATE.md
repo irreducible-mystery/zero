@@ -4,7 +4,7 @@
      Every number below was computed by a command in this run.
      bin/verify.sh regenerates this file and fails if it differs. -->
 
-Generated: 2026-08-02 11:35:47 UTC
+Generated: 2026-08-02 12:33:47 UTC
 Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978f416e0ebd1fceeebc2c4138c05, Release)
 
 ## Corpus
@@ -17,7 +17,7 @@ Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978
 | Files with forbidden axioms | 0 |
 | `sorry` warnings | 0 |
 | Census exit status | 0 |
-| Census wall clock | 19s |
+| Census wall clock | 14s |
 
 Permitted axioms are exactly `propext`, `Classical.choice`, `Quot.sound`.
 Anything else fails the run. This is an allowlist: an axiom nobody thought to
@@ -76,15 +76,15 @@ below is derived from `ledger/` by that script.
 | | |
 |---|---|
 | Classes | 4 |
-| Recorded sites | 12 |
-| Open sites | 4 |
+| Recorded sites | 19 |
+| Open sites | 11 |
 | Gates | 10 |
 | Gates with no negative control | 2 |
 
 | class | sites | open | mechanism | search key |
 |---|---|---|---|---|
-| `UNWITNESSED-PASS` | 5 | 0 | mechanized | `grep -nE 'PASS\|exit 0\|exit $fail' bin/*.sh` |
-| `GATE-NAME-OVERCLAIMS` | 4 | 2 | mechanized | `for each gate, compare its printed title to the predicate it evaluates` |
+| `UNWITNESSED-PASS` | 10 | 5 | mechanized | `grep -nE 'PASS\|exit 0\|exit $fail' bin/*.sh` |
+| `GATE-NAME-OVERCLAIMS` | 6 | 4 | mechanized | `for each gate, compare its printed title to the predicate it evaluates` |
 | `UNCHARACTERIZED-COST` | 2 | 1 | mechanized | `grep -nE 'date \+%s\|wall clock\|SECS' bin/*.sh` |
 | `ATTRIBUTION-DRIFT` | 1 | 1 | **unmechanized** | `-` |
 

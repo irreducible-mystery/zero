@@ -14,3 +14,10 @@ GATE-NAME-OVERCLAIMS	search key for UNWITNESSED-PASS, enumerated 14 of 18 sites	
 UNCHARACTERIZED-COST	census wall clock compared in STATE.md	closed
 UNCHARACTERIZED-COST	gate cost compared across two uncharacterized containers	open
 ATTRIBUTION-DRIFT	syntax-error probe caught by check 3, credited to check 2	open
+UNWITNESSED-PASS	bin/check.sh globs *.lean while bin/perfile.sh uses find, lean/ subdirectory never censused	open
+UNWITNESSED-PASS	bin/check.sh census, n.isInternal skips _-prefixed declarations	open
+UNWITNESSED-PASS	ledger/gates.tsv omits verify:9 and verify:10, gate count 10 of 12	open
+UNWITNESSED-PASS	ledger/events.tsv field-catch has no site field and no witness	open
+UNWITNESSED-PASS	bin/ledger.sh escalation fires only on literal -, any prose mechanism exempts	open
+GATE-NAME-OVERCLAIMS	ledger/gates.tsv control path never resolved against the tree	open
+GATE-NAME-OVERCLAIMS	bin/check.sh omits the PATH export its documented invocation needs	open
