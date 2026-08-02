@@ -13,6 +13,18 @@ happened here repeatedly and is designed out rather than warned about.
     curl https://elan.lean-lang.org/elan-init.sh -sSf | sh   # ~2 min
     sh bin/verify.sh
 
+If `elan.lean-lang.org` is unreachable — some sandboxes and corporate proxies
+deny it — the toolchain is also a plain tarball on GitHub, and the scripts only
+need `lean` on `PATH`:
+
+    curl -sSL -o lean.tar.zst \
+      https://github.com/leanprover/lean4/releases/download/v4.22.0/lean-4.22.0-linux.tar.zst
+    mkdir -p /opt/lean && tar --zstd -xf lean.tar.zst -C /opt/lean --strip-components=1
+    mkdir -p /root/.elan && ln -sfn /opt/lean/bin /root/.elan/bin   # where the scripts look
+
+A single install path that some networks block is a weakness in the only claim
+this repo makes, which is that a stranger can check it without trusting anyone.
+
 `lean/` has **no imports**. No Mathlib, no `lake`, no network after the
 toolchain. If `verify.sh` exits 0, everything in `STATE.md` is true of the tree
 in front of you. If it exits non-zero, something is wrong and it will say what.
