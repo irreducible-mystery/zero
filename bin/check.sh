@@ -85,8 +85,18 @@ for f in *.lean; do
     # while lean itself was printing `depends on axioms: [propext, Attack.cheat,
     # Quot.sound]` in the very output being grepped. A denylist cannot enumerate
     # what an author may invent. `axiom` was also missing from the extractor.
-    extra=$(printf '%s\n' "$out" \
-            | sed -n 's/.*depends on axioms: \[\(.*\)\]/\1/p' \
+    # NB: lean WRAPS long axiom lists across lines --
+    #   'X' depends on axioms: [A.Very.Long.Name,
+    #    B.Another.Long.Name]
+    # An earlier version used a per-line sed requiring '[' and ']' on the SAME
+    # line, so it extracted NOTHING from any wrapped list and forbidden axioms
+    # were invisible. That was masked only because axioms declared in the same
+    # file get probed individually and their own short output does fit one line.
+    # Newlines are collapsed to spaces BEFORE extraction so wrapping cannot hide
+    # anything.
+    extra=$(printf '%s\n' "$out" | tr '\n' ' ' \
+            | grep -o 'depends on axioms: \[[^]]*\]' \
+            | sed 's/.*\[//; s/\]//' \
             | tr ',' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
             | grep -v '^$' | sort -u \
             | grep -vxE 'propext|Classical\.choice|Quot\.sound')

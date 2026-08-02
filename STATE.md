@@ -4,7 +4,7 @@
      Every number below was computed by a command in this run.
      bin/verify.sh regenerates this file and fails if it differs. -->
 
-Generated: 2026-08-02 01:55:09 UTC
+Generated: 2026-08-02 02:08:46 UTC
 Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978f416e0ebd1fceeebc2c4138c05, Release)
 
 ## Corpus
@@ -17,7 +17,7 @@ Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978
 | Files with forbidden axioms | 0 |
 | `sorry` warnings | 0 |
 | Census exit status | 0 |
-| Census wall clock | 12s |
+| Census wall clock | 13s |
 
 Permitted axioms are exactly `propext`, `Classical.choice`, `Quot.sound`.
 Anything else fails the run. This is an allowlist: an axiom nobody thought to
@@ -40,12 +40,13 @@ name cannot pass.
 ## Negative controls
 
 These files exist to be rejected. **A passing probe means the gate is broken**,
-which is the failure this project keeps hitting. 2 of 2 caught.
+which is the failure this project keeps hitting. 3 of 3 caught.
 
 | probe | check.sh exit | verdict |
 |---|---|---|
 | `axiom_probe.lean` | 1 | CAUGHT |
 | `sorry_probe.lean` | 1 | CAUGHT |
+| `wrapped_axiom_probe.lean` | 1 | CAUGHT |
 
 
 ### What `lean` alone says about the same files
@@ -57,6 +58,7 @@ error at all.
 |---|---|---|
 | `axiom_probe.lean` | 0 | 0 |
 | `sorry_probe.lean` | 0 | 1 |
+| `wrapped_axiom_probe.lean` | 0 | 0 |
 
 
 ## How to check this yourself
