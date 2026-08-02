@@ -1,52 +1,57 @@
 #!/bin/sh
-# check.sh - compile every file standalone AND census EVERY declaration.
+# check.sh — soundness census over EVERY declaration in a Lean file.
 #
-# The census is INJECTED, not read from the file. An earlier version reported
-# only the `#print axioms` lines the author happened to write, which covered
-# 45 of 66 declarations while the README claimed "every declaration". That
-# claim was false and a cold reader caught it. This version extracts every
-# declaration name and probes it, and ABORTS if it cannot.
+# HOW THE DECLARATION LIST IS OBTAINED, AND WHY IT CHANGED
 #
-# 2026-08-01: the version after THAT one still said "EVERY declaration" while
-# matching only `theorem|lemma`. A `sorry` inside a `def` that no theorem
-# depends on was therefore invisible: on a planted probe, `lean` emitted only
-# `warning: declaration uses 'sorry'` and exited 0, and this script printed
-# "1 declarations, 1 audited, sorryAx/native: 0". Two fixes below:
-#   (a) extract def/abbrev/instance/structure/example as well as theorem/lemma;
-#   (b) an independent GATE on lean's own "declaration uses 'sorry'" warning,
-#       which catches holes in anonymous declarations that have no name to probe.
-# (b) does not depend on (a) being complete, which is the point of having it.
+#   Earlier versions extracted declaration names with an awk regex over the
+#   source text. Every version of that regex was wrong, and each was found by
+#   planting something false rather than by running it on files that pass:
+#
+#     1. it read only the `#print axioms` lines the author had written by hand
+#        -- 45 of 66 declarations, while the docs claimed "every declaration"
+#     2. it matched only `theorem|lemma`, so a `sorry` inside a `def` that no
+#        theorem depended on was invisible
+#     3. it used a DENYLIST of bad axioms, so a planted `axiom cheat : 0 = 1`
+#        and a theorem proving `2 + 2 = 5` from it passed clean
+#     4. its allowlist parser required `[` and `]` on the same line, and lean
+#        WRAPS long axiom lists, so wrapped lists parsed as empty
+#     5. it anchored on `[A-Za-z_]`, which is ASCII. Greek identifiers are
+#        ordinary style in Lean mathematics, so `axiom δcheat : 0 = 1` and
+#        `theorem δfalse : False` were invisible -- the census reported
+#        "4 declarations, 4 audited" on a file with 7, and passed.
+#
+#   Five regexes, five holes. The regex was not the bug; parsing source text to
+#   discover declarations is the bug. Nobody writing a regex can enumerate the
+#   identifiers a future author may legally use.
+#
+#   So the list is no longer parsed. It is ASKED FOR. The census probe imports
+#   Lean, appends the file, and walks `env.constants.map₂` -- the declarations
+#   this module actually added -- calling `CollectAxioms.collect` on each. The
+#   answer comes from the same elaborator that accepted the file. There is no
+#   identifier it can spell that this cannot see.
+#
+# TWO INDEPENDENT GATES, because one gate is one point of failure:
+#   (a) the axiom census below, ALLOWLIST not denylist
+#   (b) a separate check on lean's own `uses 'sorry'` warning, which does not
+#       depend on the census working at all
+#
+# NOTE: `lean f.lean; echo $?` returns 0 for a file full of `sorry`, and 0 for a
+# file with a planted false axiom. Exit status is not a gate and never was.
+
 set -u
-# core Lean only: these files have no imports, so no LEAN_PATH is needed.
 command -v lean >/dev/null 2>&1 || { echo "no lean on PATH"; exit 2; }
 fail=0
 
-extract() {
-    awk '
-      /^[[:space:]]*namespace[[:space:]]+/ { ns[++d]=$2; next }
-      /^[[:space:]]*end[[:space:]]+/       { if (d>0 && $2==ns[d]) d--; next }
-      {
-        line=$0
-        sub(/^[[:space:]]*/,"",line)
-        sub(/^@\[[^]]*\][[:space:]]*/,"",line)
-        while (line ~ /^(private|protected|noncomputable|partial|unsafe)[[:space:]]+/)
-          sub(/^(private|protected|noncomputable|partial|unsafe)[[:space:]]+/,"",line)
-        if (line ~ /^(theorem|lemma|def|abbrev|instance|structure|example|axiom)[[:space:]]+[A-Za-z_]/) {
-          n=line; sub(/^[a-z]+[[:space:]]+/,"",n); sub(/[^A-Za-z_0-9.'"'"'].*/,"",n)
-          if (n=="") next
-          p=""; for (i=1;i<=d;i++) p = p ns[i] "."
-          print p n
-        }
-      }' "$1"
-}
+# Permitted axioms; anything else fails. An axiom nobody thought to name cannot
+# pass an allowlist, which is the entire point of it being one.
+ALLOW='propext|Classical\.choice|Quot\.sound'
 
 echo "=== compile ==="
 for f in *.lean; do
     [ -e "$f" ] || continue
     out=$(lean "$f" 2>&1)
     rc=$?
-    # GATE (b): lean exits 0 on `sorry` -- it is only a warning. Catch it here,
-    # independently of whether the name-based census below reaches the decl.
+    # GATE (b): independent of the census below.
     sw=$(printf '%s' "$out" | grep -c "uses 'sorry'")
     printf '  %-24s EXIT=%s  sorry-warnings=%s\n' "$f" "$rc" "$sw"
     [ "$rc" -eq 0 ] || fail=1
@@ -54,61 +59,57 @@ for f in *.lean; do
 done
 
 echo
-echo "=== axiom census, injected over EVERY declaration ==="
+echo "=== axiom census, enumerated by Lean itself over every declaration ==="
 tot=0; aud=0
 for f in *.lean; do
     [ -e "$f" ] || continue
-    names=$(extract "$f" | sort -u)
-    [ -z "$names" ] && continue
-    n=$(printf '%s\n' "$names" | wc -l | tr -d ' ')
     probe=$(mktemp /tmp/gapcensus.XXXXXX.lean)
-    { sed 's/^#print axioms.*//' "$f"; echo
-      for nm in $names; do printf '#print axioms %s\n' "$nm"; done ; } > "$probe"
-    out=$(lean "$probe" 2>&1); rm -f "$probe"
-    if printf '%s' "$out" | grep -q 'error:'; then
+    {
+        echo 'import Lean'
+        # a corpus file may carry its own imports; they must precede everything.
+        grep -E '^[[:space:]]*import[[:space:]]' "$f" 2>/dev/null
+        grep -vE '^[[:space:]]*import[[:space:]]' "$f"
+        echo
+        echo 'open Lean Elab Command in'
+        echo 'run_cmd do'
+        echo '  let env ← getEnv'
+        echo '  for (n, _) in env.constants.map₂.toList do'
+        echo '    unless n.isInternal do'
+        echo '      let (_, s) := ((CollectAxioms.collect n).run env).run {}'
+        echo '      logInfo s!"CENSUS|{n}|{s.axioms.toList.map toString}"'
+    } > "$probe"
+    out=$(lean "$probe" 2>&1); prc=$?
+    rm -f "$probe"
+
+    if [ "$prc" -ne 0 ]; then
         echo "  ABORT: census probe for $f did not compile - NO CENSUS TAKEN"
         printf '%s\n' "$out" | grep 'error:' | head -3 | sed 's/^/    /'
         fail=1; continue
     fi
-    a=$(printf '%s' "$out" | grep -c "depends on axioms\|does not depend on any axioms")
-    if [ "$n" -ne "$a" ]; then
-        echo "  ABORT: $f has $n declarations but $a were audited"
+
+    lines=$(printf '%s\n' "$out" | grep '^CENSUS|')
+    n=$(printf '%s\n' "$lines" | grep -c '^CENSUS|')
+    if [ "$n" -eq 0 ]; then
+        echo "  ABORT: $f yielded no declarations - refusing to report a vacuous pass"
         fail=1; continue
     fi
-    tot=$((tot+n)); aud=$((aud+a))
-    # ALLOWLIST, not denylist. Only these three are permitted; ANY other axiom
-    # fails, including ones nobody thought to name.
-    #
-    # 2026-08-02: this was a denylist -- grep -c for sorryAx|ofReduceBool. A file
-    # containing `axiom cheat : (0:Nat) = 1` and a theorem `2+2=5` proved from it
-    # passed with "2 declarations, 2 audited, sorryAx/native: 0" and EXIT 0,
-    # while lean itself was printing `depends on axioms: [propext, Attack.cheat,
-    # Quot.sound]` in the very output being grepped. A denylist cannot enumerate
-    # what an author may invent. `axiom` was also missing from the extractor.
-    # NB: lean WRAPS long axiom lists across lines --
-    #   'X' depends on axioms: [A.Very.Long.Name,
-    #    B.Another.Long.Name]
-    # An earlier version used a per-line sed requiring '[' and ']' on the SAME
-    # line, so it extracted NOTHING from any wrapped list and forbidden axioms
-    # were invisible. That was masked only because axioms declared in the same
-    # file get probed individually and their own short output does fit one line.
-    # Newlines are collapsed to spaces BEFORE extraction so wrapping cannot hide
-    # anything.
-    extra=$(printf '%s\n' "$out" | tr '\n' ' ' \
-            | grep -o 'depends on axioms: \[[^]]*\]' \
-            | sed 's/.*\[//; s/\]//' \
+
+    extra=$(printf '%s\n' "$lines" \
+            | sed 's/^CENSUS|[^|]*|//; s/^\[//; s/\]$//' \
             | tr ',' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
             | grep -v '^$' | sort -u \
-            | grep -vxE 'propext|Classical\.choice|Quot\.sound')
+            | grep -vxE "$ALLOW")
+
+    tot=$((tot+n)); aud=$((aud+n))
     if [ -n "$extra" ]; then
-        printf '  %-24s %3s declarations, %3s audited  FORBIDDEN AXIOMS:\n' "$f" "$n" "$a"
+        printf '  %-24s %3s declarations, %3s audited  FORBIDDEN AXIOMS:\n' "$f" "$n" "$n"
         printf '%s\n' "$extra" | sed 's/^/      /'
         fail=1
     else
-        printf '  %-24s %3s declarations, %3s audited, axioms within allowlist\n' "$f" "$n" "$a"
+        printf '  %-24s %3s declarations, %3s audited, axioms within allowlist\n' "$f" "$n" "$n"
     fi
 done
+
 echo
 echo "  TOTAL: $tot declarations, $aud audited"
-[ "$tot" -eq "$aud" ] || { echo "  MISMATCH"; fail=1; }
 exit $fail

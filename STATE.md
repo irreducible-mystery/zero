@@ -4,7 +4,7 @@
      Every number below was computed by a command in this run.
      bin/verify.sh regenerates this file and fails if it differs. -->
 
-Generated: 2026-08-02 02:08:46 UTC
+Generated: 2026-08-02 02:36:33 UTC
 Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978f416e0ebd1fceeebc2c4138c05, Release)
 
 ## Corpus
@@ -12,12 +12,12 @@ Toolchain: Lean (version 4.22.0, x86_64-unknown-linux-gnu, commit ba2cbbf09d4978
 | | |
 |---|---|
 | Lean files in `lean/` | 9 |
-| Declarations | 87 |
-| Declarations audited | 87 |
+| Declarations | 140 |
+| Declarations audited | 140 |
 | Files with forbidden axioms | 0 |
 | `sorry` warnings | 0 |
 | Census exit status | 0 |
-| Census wall clock | 13s |
+| Census wall clock | 22s |
 
 Permitted axioms are exactly `propext`, `Classical.choice`, `Quot.sound`.
 Anything else fails the run. This is an allowlist: an axiom nobody thought to
@@ -27,12 +27,12 @@ name cannot pass.
 
 | file | declarations | audited |
 |---|---|---|
-| `ArtinSchreier.lean` | 12 | 12 |
-| `Ceiling.lean` | 13 | 13 |
+| `ArtinSchreier.lean` | 34 | 34 |
+| `Ceiling.lean` | 15 | 15 |
 | `Characteristic.lean` | 17 | 17 |
-| `Quadratic.lean` | 10 | 10 |
-| `Reflexive.lean` | 6 | 6 |
-| `Schedules.lean` | 11 | 11 |
+| `Quadratic.lean` | 31 | 31 |
+| `Reflexive.lean` | 10 | 10 |
+| `Schedules.lean` | 15 | 15 |
 | `Shape.lean` | 9 | 9 |
 | `Tropical.lean` | 5 | 5 |
 | `Vieta.lean` | 4 | 4 |
@@ -40,12 +40,13 @@ name cannot pass.
 ## Negative controls
 
 These files exist to be rejected. **A passing probe means the gate is broken**,
-which is the failure this project keeps hitting. 3 of 3 caught.
+which is the failure this project keeps hitting. 4 of 4 caught.
 
 | probe | check.sh exit | verdict |
 |---|---|---|
 | `axiom_probe.lean` | 1 | CAUGHT |
 | `sorry_probe.lean` | 1 | CAUGHT |
+| `unicode_probe.lean` | 1 | CAUGHT |
 | `wrapped_axiom_probe.lean` | 1 | CAUGHT |
 
 
@@ -58,6 +59,7 @@ error at all.
 |---|---|---|
 | `axiom_probe.lean` | 0 | 0 |
 | `sorry_probe.lean` | 0 | 1 |
+| `unicode_probe.lean` | 0 | 0 |
 | `wrapped_axiom_probe.lean` | 0 | 0 |
 
 
